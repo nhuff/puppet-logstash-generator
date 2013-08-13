@@ -147,4 +147,54 @@ describe 'logstash::<%=section%>::<%=plugin_name%>', :type => 'define' do
 
   end
 
+  context "Set file owner" do
+
+    let(:facts) { {:operatingsystem => 'CentOS' }}
+    let(:pre_condition) { 'class {"logstash": logstash_user => "logstash", logstash_group => "logstash" }'}
+    let(:title) { 'test' }
+
+    let :params do {
+  <%-
+  val=1
+  sorted_attributes.each do |name, config|
+  next if config[:deprecated]
+  next if name.is_a?(Regexp)
+  next if name == 'order'
+  next if name == 'instances'
+
+  if config[:validate].is_a?(Array)
+    annotation = "#{config[:validate].inspect}"
+  else
+    annotation = "#{config[:validate]}"
+  end
+
+  if annotation == 'string' or annotation == 'password'
+    testvalue= "'value#{val}'"
+  elsif annotation == 'array'
+    testvalue = "['value#{val}']"
+  elsif annotation == 'number' or annotation == 'integer'
+    testvalue = val
+  elsif annotation == 'hash'
+    testvalue = "{ 'field#{val}' => 'value#{val}' }"
+  elsif annotation == 'boolean' or annotation == 'bool'
+    testvalue = 'false'
+  elsif annotation == 'path'
+    testvalue = "'puppet:///path/to/file#{val}'"
+  else
+    value = annotation.to_s.gsub(/\"/,'\'')
+    value2 = value.split(",")
+    value3 = value2.first.to_s.gsub(/\[/,'')
+    testvalue = "#{value3}"
+  end
+  -%>
+      :<%=name -%> => <%=testvalue-%>,
+  <%-
+  val += 1
+  end-%>
+    } end
+  
+    it { should contain_file('/etc/logstash/agent/config/<%=section%>_<%- if section == 'filter' %>10_<%- end -%><%=plugin_name%>_test').with(:owner => 'logstash', :group => 'logstash') }
+
+  end
+
 end
