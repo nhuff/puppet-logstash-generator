@@ -195,7 +195,7 @@ sorted_1.each do |name, config|
   if ($<%=name %> != '') {
     validate_hash($<%=name %>)
     $var_<%=name%> = $<%=name%>
-    $arr_<%=name%> = inline_template('<%%= "["+var_<%=name%>.sort.collect { |k,v| "\"#{k}\", \"#{v}\"" }.join(", ")+"]" %>')
+    $arr_<%=name%> = inline_template('<%%= "["+@var_<%=name%>.sort.collect { |k,v| "\"#{k}\", \"#{v}\"" }.join(", ")+"]" %>')
     $opt_<%=name%> = "  <%=name%> => ${arr_<%=name%>}\n"
   }
 <%- elsif annotation == 'boolean' or annotation == 'bool' -%>
