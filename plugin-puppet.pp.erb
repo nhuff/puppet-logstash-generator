@@ -89,6 +89,12 @@ if section == 'filter'
 #   Default value: 10
 #   This variable is optional
 #
+# [*guard*]
+#   A conditional expression to wrap the filter in
+#   Value type is string
+#   Default value: ''
+#   This Variable is optional
+#
 <%-
 end
 -%>
@@ -115,6 +121,9 @@ define logstash::<%= section %>::<%= name%> (
 
 # Add an 'order' setting for all filters.
 sorted_attributes << ["order", :validate => :number] if section == 'filter'
+
+# Add a 'guard setting for all filters and outputs
+sorted_attributes << ["guard", :validate => :string] if ['filter','output'].include?(section)
 
 sorted_attributes << ["instances", :validate => :array]
 
@@ -173,7 +182,9 @@ sorted_1.each do |name, config|
 -%>
   if ($<%=name %> != '') {
     validate_string($<%=name%>)
+    <%- if name != 'guard' -%>
     $opt_<%=name%> = "  <%=name%> => \"${<%=name%>}\"\n"
+    <%- end -%>
   }
 <%- elsif  annotation == 'array' -%>
   if ($<%=name %> != '') {
@@ -260,18 +271,26 @@ if got_path_resource == true -%>
   }
 
 <%- end -%>
+  if ($guard != '') {
+    $guard_start = "if ${guard} {\n"
+    $guard_end = '\n}'
+  } else {
+    $guard_start = ''
+    $guard_end = ''
+  }
   #### Write config file
 
   file { $conffiles:
     ensure  => present,
-    content => "<%= section %> {\n <%=name%> {\n<%-
+    content => "<%= section %> {\n ${guard_start}<%=name%> {\n<%-
 sorted_attributes.each do |name, config|
   next if config[:deprecated]
   next if name.is_a?(Regexp)
   next if name == 'order'
+  next if name == 'guard'
   next if name == 'instances'
 -%>${opt_<%=name %>}<%- end -%>
- }\n}\n",
+ }\n${guard_end}}\n",
     mode    => '0440',
     notify  => Service[$services],
     require => Class['logstash::package', 'logstash::config']
