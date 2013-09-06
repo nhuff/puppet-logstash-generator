@@ -89,6 +89,12 @@ if section == 'filter'
 #   Default value: 10
 #   This variable is optional
 #
+<%-
+end
+-%>
+<%-
+if ['filter','output'].include?(section)
+-%>
 # [*guard*]
 #   A conditional expression to wrap the filter in
 #   Value type is string
